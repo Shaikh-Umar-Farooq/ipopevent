@@ -358,8 +358,8 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
       </div>
 
       <div class="event-details">
-        <div class="date">${ticket.ticket_type && ticket.ticket_type.toLowerCase().includes('Day 1') ? '22 November 2025' : '23 November 2025'}</div>
-        <div class="time">${ticket.ticket_type && ticket.ticket_type.toLowerCase().includes('Day 1') ? '5:00 PM onwards' : '4:00 PM onwards'}</div>
+        <div class="date">${ticket.ticket_type && String(ticket.ticket_type).toLowerCase().trim().includes('day 1') ? '22 November 2025' : '23 November 2025'}</div>
+        <div class="time">${ticket.ticket_type && String(ticket.ticket_type).toLowerCase().trim().includes('day 1') ? '5:00 PM onwards' : '4:00 PM onwards'}</div>q
         
         <div class="venue">
           <div class="venue-label">Venue</div>
