@@ -191,6 +191,20 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
     .content { 
       padding: 32px 24px; 
     }
+    .thank-you {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .thank-you h2 {
+      margin: 0 0 8px 0;
+      font-size: 20px;
+      color: #000;
+    }
+    .thank-you p {
+      margin: 0;
+      color: #666;
+      font-size: 15px;
+    }
     .ticket-info { 
       margin: 24px 0;
       padding: 20px 0;
@@ -224,16 +238,50 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
       padding: 16px;
       border-radius: 8px;
       margin: 24px 0;
-      text-align: center;
     }
     .event-details .date {
       font-size: 18px;
       font-weight: 600;
       margin-bottom: 4px;
+      text-align: center;
     }
     .event-details .time {
       color: #666;
       font-size: 14px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .venue {
+      border-top: 1px solid #e5e5e5;
+      padding-top: 16px;
+      margin-top: 16px;
+    }
+    .venue-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .venue-link {
+      display: inline-flex;
+      align-items: center;
+      color: #000;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 12px;
+      background: white;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .venue-link:hover {
+      background: #f5f5f5;
+      border-color: #000;
+    }
+    .venue-link svg {
+      margin-right: 6px;
     }
     .qr-container { 
       text-align: center; 
@@ -282,6 +330,11 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
     </div>
     
     <div class="content">
+      <div class="thank-you">
+        <h2>Thank You for Your Purchase! 🎉</h2>
+        <p>We're excited to see you at the event</p>
+      </div>
+
       <div class="ticket-info">
         <div class="info-row">
           <span class="label">Ticket Type</span>
@@ -307,6 +360,17 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
       <div class="event-details">
         <div class="date">${ticket.ticket_type && ticket.ticket_type.toLowerCase().includes('Day 1') ? '22 November 2025' : '23 November 2025'}</div>
         <div class="time">${ticket.ticket_type && ticket.ticket_type.toLowerCase().includes('Day 1') ? '5:00 PM onwards' : '4:00 PM onwards'}</div>
+        
+        <div class="venue">
+          <div class="venue-label">Venue</div>
+          <a href="https://maps.app.goo.gl/VRVtgiKmCHmyr1LZ6" class="venue-link" target="_blank">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            View Location on Map
+          </a>
+        </div>
       </div>
       
       <div class="qr-container">
