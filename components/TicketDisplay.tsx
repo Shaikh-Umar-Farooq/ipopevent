@@ -62,30 +62,21 @@ export default function TicketDisplay({
         </h2>
       </div>
 
-      {/* Ticket Details */}
-      <div className="space-y-3 bg-white dark:bg-gray-800 rounded-lg p-4">
-        <DetailRow label="Ticket ID" value={ticket.ticket_id} />
-        <DetailRow label="Payment ID" value={ticket.payment_id} />
+      {/* Ticket Type - Most Important */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 mb-4 text-center border-2 border-gray-300 dark:border-gray-600">
+        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+          TICKET TYPE
+        </p>
+        <p className="text-3xl font-bold text-gray-900 dark:text-white uppercase tracking-wide">
+          {ticket.ticket_type || 'Standard'}
+        </p>
+      </div>
+
+      {/* Essential Details */}
+      <div className="space-y-4 bg-white dark:bg-gray-800 rounded-lg p-5">
         <DetailRow label="Name" value={ticket.name} />
         <DetailRow label="Email" value={ticket.email} />
-        
-        {ticket.phone && <DetailRow label="Phone" value={ticket.phone} />}
-        {ticket.event_name && <DetailRow label="Event" value={ticket.event_name} />}
-        {ticket.event_date && <DetailRow label="Event Date" value={ticket.event_date} />}
-        {ticket.ticket_type && <DetailRow label="Ticket Type" value={ticket.ticket_type} />}
-        {ticket.price && <DetailRow label="Price" value={`$${ticket.price}`} />}
-        
-        <DetailRow
-          label="Created At"
-          value={new Date(ticket.created_at).toLocaleString()}
-        />
-        
-        {ticket.used_at && (
-          <DetailRow
-            label="Used At"
-            value={new Date(ticket.used_at).toLocaleString()}
-          />
-        )}
+        <DetailRow label="Payment ID" value={ticket.payment_id} />
       </div>
 
       {/* Mark Entry Button (only show for valid tickets) */}
@@ -93,9 +84,9 @@ export default function TicketDisplay({
         <button
           onClick={onMarkEntry}
           disabled={isMarking}
-          className="w-full mt-6 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 text-lg"
+          className="w-full mt-6 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold py-4 px-6 rounded-lg transition-colors duration-200 text-xl shadow-lg"
         >
-          {isMarking ? 'Marking Entry...' : '✓ Mark Entry'}
+          {isMarking ? 'Marking Entry...' : '✓ MARK ENTRY'}
         </button>
       )}
     </div>
@@ -104,11 +95,11 @@ export default function TicketDisplay({
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between items-start border-b border-gray-200 dark:border-gray-700 pb-2">
-      <span className="font-semibold text-gray-700 dark:text-gray-300">
-        {label}:
+    <div className="flex flex-col space-y-1">
+      <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+        {label}
       </span>
-      <span className="text-gray-900 dark:text-gray-100 text-right ml-2 break-all">
+      <span className="text-lg font-medium text-gray-900 dark:text-gray-100 break-all">
         {value}
       </span>
     </div>
