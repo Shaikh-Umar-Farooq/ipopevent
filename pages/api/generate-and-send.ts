@@ -300,7 +300,7 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
         
         <div class="info-row">
           <span class="label">Amount Paid</span>
-          <span class="value">₹${ticket.amount || '0'}</span>
+          <span class="value">₹${ticket.price || '0'}</span>
         </div>
       </div>
 
