@@ -161,85 +161,171 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-    .ticket-info { background: white; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #667eea; }
-    .qr-container { text-align: center; margin: 30px 0; }
-    .qr-code { max-width: 300px; border: 10px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 10px; }
-    .ticket-type { display: inline-block; background: #667eea; color: white; padding: 8px 20px; border-radius: 20px; font-weight: bold; margin: 10px 0; }
-    .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
-    .info-row { margin: 10px 0; }
-    .label { font-weight: bold; color: #667eea; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; 
+      line-height: 1.6; 
+      color: #1a1a1a; 
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+    .container { 
+      max-width: 500px; 
+      margin: 0 auto; 
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .header { 
+      background: #000; 
+      color: white; 
+      padding: 24px; 
+      text-align: center; 
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .content { 
+      padding: 32px 24px; 
+    }
+    .ticket-info { 
+      margin: 24px 0;
+      padding: 20px 0;
+      border-top: 1px solid #e5e5e5;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .info-row { 
+      display: flex;
+      justify-content: space-between;
+      margin: 12px 0;
+      font-size: 15px;
+    }
+    .label { 
+      color: #666;
+    }
+    .value {
+      font-weight: 600;
+      color: #000;
+      text-align: right;
+    }
+    .ticket-type {
+      background: #000;
+      color: white;
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: inline-block;
+    }
+    .event-details {
+      background: #f9f9f9;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 24px 0;
+      text-align: center;
+    }
+    .event-details .date {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .event-details .time {
+      color: #666;
+      font-size: 14px;
+    }
+    .qr-container { 
+      text-align: center; 
+      margin: 32px 0; 
+    }
+    .qr-code { 
+      max-width: 200px; 
+      width: 100%;
+      border: 8px solid #f5f5f5;
+      border-radius: 8px;
+    }
+    .warning { 
+      background: #fff8e1; 
+      border-left: 3px solid #ffa726;
+      padding: 16px; 
+      border-radius: 4px; 
+      margin: 24px 0;
+      font-size: 14px;
+    }
+    .warning strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #f57c00;
+    }
+    .warning ul {
+      margin: 8px 0 0 0;
+      padding-left: 20px;
+    }
+    .warning li {
+      margin: 4px 0;
+      color: #666;
+    }
+    .footer { 
+      text-align: center; 
+      padding: 20px;
+      font-size: 12px; 
+      color: #999;
+      border-top: 1px solid #e5e5e5;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🎫 Your Event Ticket</h1>
-      <p>Get ready for an amazing experience!</p>
+      <h1>I-Popstar Live - Ticket</h1>
     </div>
     
     <div class="content">
-      <p>Hi <strong>${ticket.name}</strong>,</p>
-      
-      <p>Thank you for your purchase! Your ticket is ready.</p>
-      
       <div class="ticket-info">
         <div class="info-row">
-          <span class="label">Ticket Type:</span>
-          <span class="ticket-type">${ticket.ticket_type || 'Standard'}</span>
+          <span class="label">Ticket Type</span>
+          <span class="value"><span class="ticket-type">${ticket.ticket_type || 'Standard'}</span></span>
         </div>
         
         <div class="info-row">
-          <span class="label">Name:</span> ${ticket.name}
+          <span class="label">Name</span>
+          <span class="value">${ticket.name}</span>
         </div>
         
         <div class="info-row">
-          <span class="label">Email:</span> ${ticket.email}
+          <span class="label">Email</span>
+          <span class="value">${ticket.email}</span>
         </div>
         
         <div class="info-row">
-          <span class="label">Payment ID:</span> ${ticket.payment_id}
+          <span class="label">Amount Paid</span>
+          <span class="value">₹${ticket.amount || '0'}</span>
         </div>
-        
-        ${ticket.event_name ? `
-        <div class="info-row">
-          <span class="label">Event:</span> ${ticket.event_name}
-        </div>
-        ` : ''}
-        
-        ${ticket.event_date ? `
-        <div class="info-row">
-          <span class="label">Date:</span> ${ticket.event_date}
-        </div>
-        ` : ''}
+      </div>
+
+      <div class="event-details">
+        <div class="date">${ticket.ticket_type && ticket.ticket_type.includes('Day 1') ? '22 November 2025' : '23 November 2025'}</div>
+        <div class="time">${ticket.ticket_type && ticket.ticket_type.includes('Day 1') ? '5:00 PM onwards' : '4:00 PM onwards'}</div>
       </div>
       
       <div class="qr-container">
-        <h2>Your QR Code</h2>
-        <p>Show this QR code at the entrance</p>
-        <img src="${qrCodeDataURL}" alt="Your Ticket QR Code" class="qr-code" />
+        <img src="${qrCodeDataURL}" alt="Ticket QR Code" class="qr-code" />
+        <p style="margin-top: 12px; font-size: 14px; color: #666;">Scan at venue entrance</p>
       </div>
       
-      <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0;">
-        <strong>⚠️ Important:</strong>
+      <div class="warning">
+        <strong>⚠️ Important</strong>
         <ul>
-          <li>Save this QR code on your phone or print it</li>
-          <li>This QR code is unique and can only be used once</li>
-          <li>Arrive at least 30 minutes before the event starts</li>
+          <li>Don't share this QR code with anyone</li>
+          <li>One-time use only</li>
+          <li>Arrive 30 minutes before event time</li>
         </ul>
       </div>
-      
-      <p style="text-align: center; margin-top: 30px;">
-        <strong>See you at the event! 🎉</strong>
-      </p>
     </div>
     
     <div class="footer">
       <p>This is an automated email. Please do not reply.</p>
-      <p>If you have any questions, contact our support team.</p>
     </div>
   </div>
 </body>
