@@ -6,6 +6,7 @@ import { useState } from 'react';
 import Head from 'next/head';
 import QRScanner from '@/components/QRScanner';
 import TicketDisplay from '@/components/TicketDisplay';
+import Modal from '@/components/Modal';
 import { TicketRecord, VerifyResponse } from '@/lib/types';
 
 export default function Home() {
@@ -14,6 +15,11 @@ export default function Home() {
   const [ticket, setTicket] = useState<TicketRecord | null>(null);
   const [status, setStatus] = useState<'valid' | 'used' | 'invalid' | null>(null);
   const [isMarking, setIsMarking] = useState(false);
+  
+  // Modal states
+  const [showInvalidModal, setShowInvalidModal] = useState(false);
+  const [invalidMessage, setInvalidMessage] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const handleScanSuccess = async (decodedText: string) => {
     setIsLoading(true);
@@ -38,11 +44,18 @@ export default function Home() {
       if (data.ticket) {
         setTicket(data.ticket);
         // Only set status if it's a displayable status (not 'error')
-        if (data.status === 'valid' || data.status === 'used' || data.status === 'invalid') {
+        if (data.status === 'valid' || data.status === 'used') {
           setStatus(data.status);
+        } else if (data.status === 'invalid') {
+          // Show invalid tickets as popup, not as card
+          setInvalidMessage(data.message || 'Invalid ticket');
+          setShowInvalidModal(true);
+          // Don't set ticket/status so scanner stays visible
         }
       } else {
-        setError(data.message);
+        // Generic error - also show as popup
+        setInvalidMessage(data.message);
+        setShowInvalidModal(true);
       }
     } catch (err: any) {
       console.error('Error verifying QR code:', err);
@@ -52,7 +65,12 @@ export default function Home() {
     }
   };
 
-  const handleMarkEntry = async () => {
+  const handleMarkEntryRequest = () => {
+    // Show confirmation dialog before marking
+    setShowConfirmModal(true);
+  };
+
+  const handleMarkEntryConfirmed = async () => {
     if (!ticket) return;
 
     setIsMarking(true);
@@ -74,15 +92,16 @@ export default function Home() {
       if (data.success && data.ticket) {
         setTicket(data.ticket);
         setStatus('used');
-        alert('✅ Entry marked successfully!');
       } else {
         setError(data.message);
-        alert('❌ ' + data.message);
+        setInvalidMessage(data.message);
+        setShowInvalidModal(true);
       }
     } catch (err: any) {
       console.error('Error marking entry:', err);
       setError('Failed to mark entry. Please try again.');
-      alert('❌ Failed to mark entry');
+      setInvalidMessage('Failed to mark entry. Please try again.');
+      setShowInvalidModal(true);
     } finally {
       setIsMarking(false);
     }
@@ -96,6 +115,11 @@ export default function Home() {
     setTicket(null);
     setStatus(null);
     setError('');
+  };
+
+  const handleCloseInvalidModal = () => {
+    setShowInvalidModal(false);
+    setInvalidMessage('');
   };
 
   return (
@@ -119,13 +143,27 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Error Display */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg dark:bg-red-900 dark:border-red-600 dark:text-red-200">
-              <p className="font-semibold">❌ Error</p>
-              <p>{error}</p>
-            </div>
-          )}
+          {/* Invalid QR Modal */}
+          <Modal
+            isOpen={showInvalidModal}
+            onClose={handleCloseInvalidModal}
+            title="Invalid Ticket"
+            message={invalidMessage}
+            type="error"
+            confirmText="Close"
+          />
+
+          {/* Confirmation Modal */}
+          <Modal
+            isOpen={showConfirmModal}
+            onClose={() => setShowConfirmModal(false)}
+            title="Confirm Entry"
+            message={`Mark entry for ${ticket?.name}?`}
+            type="confirm"
+            onConfirm={handleMarkEntryConfirmed}
+            confirmText="Yes, Mark Entry"
+            cancelText="Cancel"
+          />
 
           {/* Loading State */}
           {isLoading && (
@@ -145,7 +183,7 @@ export default function Home() {
               <TicketDisplay
                 ticket={ticket}
                 status={status || 'invalid'}
-                onMarkEntry={status === 'valid' ? handleMarkEntry : undefined}
+                onMarkEntry={status === 'valid' ? handleMarkEntryRequest : undefined}
                 isMarking={isMarking}
               />
               
