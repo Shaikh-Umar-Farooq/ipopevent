@@ -16,6 +16,7 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
   const [cameras, setCameras] = useState<any[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<string>('');
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const isProcessingRef = useRef<boolean>(false);
   const qrCodeRegionId = 'qr-reader';
 
   // Get available cameras on component mount
@@ -44,6 +45,9 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
       return;
     }
 
+    // Reset the processing flag when starting a new scan
+    isProcessingRef.current = false;
+
     try {
       scannerRef.current = new Html5Qrcode(qrCodeRegionId);
       
@@ -54,7 +58,12 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
           qrbox: { width: 250, height: 250 },
         },
         (decodedText) => {
-          // Success callback
+          // Success callback - prevent multiple rapid scans
+          if (isProcessingRef.current) {
+            return; // Already processing a scan, ignore this one
+          }
+          
+          isProcessingRef.current = true;
           onScanSuccess(decodedText);
           stopScanning();
         },
@@ -88,6 +97,8 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
     // Cleanup on component unmount
     return () => {
       stopScanning();
+      // Reset processing flag on unmount so it's ready for next mount
+      isProcessingRef.current = false;
     };
   }, []);
 
