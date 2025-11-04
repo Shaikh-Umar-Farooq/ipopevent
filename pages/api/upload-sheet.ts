@@ -13,6 +13,7 @@ interface UploadRequest {
     name: string;
     email: string;
     type: string;
+    amount?: number;
   }>;
 }
 
@@ -64,6 +65,7 @@ export default async function handler(
             name: ticket.name,
             email: ticket.email,
             ticket_type: ticket.type,
+            price: ticket.amount || 0,
             used: false,
             created_at: new Date()
           }

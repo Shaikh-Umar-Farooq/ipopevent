@@ -12,6 +12,7 @@ interface SheetRow {
   name: string;
   email: string;
   type: string;
+  amount?: number;
   qr_generated: boolean;
   email_sent: boolean;
 }
@@ -207,6 +208,9 @@ export default function QRGenerator() {
                       Type
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Status
                     </th>
                   </tr>
@@ -214,18 +218,18 @@ export default function QRGenerator() {
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                         Loading data...
                       </td>
                     </tr>
                   ) : data.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                         No data found
                       </td>
                     </tr>
                   ) : (
-                    data.map((row, index) => (
+                    data.map((row: any, index) => (
                       <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                           {row.payment_id}
@@ -240,6 +244,9 @@ export default function QRGenerator() {
                           <span className="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
                             {row.type}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600 dark:text-green-400">
+                          ₹{row.amount || 0}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           {getStatusBadge(row.qr_generated, row.email_sent)}

@@ -16,6 +16,7 @@ interface ParsedRow {
   name: string;
   email: string;
   type: string;
+  amount: number;
 }
 
 export default function DataImportModal({ isOpen, onClose, onUploadComplete }: DataImportModalProps) {
@@ -60,18 +61,20 @@ export default function DataImportModal({ isOpen, onClose, onUploadComplete }: D
           continue;
         }
 
-        if (cells.length >= 4) {
+        if (cells.length >= 5) {
+          const amount = parseFloat(cells[4].trim()) || 0;
           rows.push({
             payment_id: cells[0].trim(),
             name: cells[1].trim(),
             email: cells[2].trim(),
-            type: cells[3].trim()
+            type: cells[3].trim(),
+            amount: amount
           });
         }
       }
 
       if (rows.length === 0) {
-        setError('No valid data found. Please paste data with 4 columns: payment_id, name, email, type');
+        setError('No valid data found. Please paste data with 5 columns: payment_id, name, email, type, amount');
         return;
       }
 
@@ -155,7 +158,7 @@ export default function DataImportModal({ isOpen, onClose, onUploadComplete }: D
               <p className="font-semibold text-blue-900 dark:text-blue-100">📝 Instructions:</p>
               <ol className="list-decimal list-inside text-sm text-blue-800 dark:text-blue-200 mt-2 space-y-1">
                 <li>Open your SharePoint Excel sheet</li>
-                <li>Select the data (payment_id, name, email, type columns)</li>
+                <li>Select the data (payment_id, name, email, type, amount columns)</li>
                 <li>Copy (Ctrl+C or Cmd+C)</li>
                 <li>Paste below (Ctrl+V or Cmd+V)</li>
                 <li>Review the preview and click Upload</li>
@@ -175,7 +178,7 @@ export default function DataImportModal({ isOpen, onClose, onUploadComplete }: D
                     parseData(e.target.value);
                   }}
                   onPaste={handlePaste}
-                  placeholder="Paste your Excel data here...&#10;&#10;Example:&#10;PAY-001    John Doe    john@example.com    VIP&#10;PAY-002    Jane Smith    jane@example.com    General"
+                  placeholder="Paste your Excel data here...&#10;&#10;Example:&#10;PAY-001    John Doe    john@example.com    VIP    150&#10;PAY-002    Jane Smith    jane@example.com    General    75"
                   className="w-full h-64 p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:bg-gray-700 dark:text-white font-mono text-sm"
                 />
               </div>
@@ -205,6 +208,7 @@ export default function DataImportModal({ isOpen, onClose, onUploadComplete }: D
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Name</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Email</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Type</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Amount</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -218,6 +222,9 @@ export default function DataImportModal({ isOpen, onClose, onUploadComplete }: D
                             <span className="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
                               {row.type}
                             </span>
+                          </td>
+                          <td className="px-4 py-2 text-sm font-semibold text-green-600 dark:text-green-400">
+                            ₹{row.amount.toFixed(2)}
                           </td>
                         </tr>
                       ))}

@@ -12,6 +12,7 @@ interface SheetRow {
   name: string;
   email: string;
   type: string;
+  amount?: number;
   qr_generated: boolean;
   email_sent: boolean;
 }
@@ -53,13 +54,14 @@ export default async function handler(
     );
 
     // Combine data
-    const data: SheetRow[] = tickets.map(ticket => {
+    const data: SheetRow[] = tickets.map((ticket: any) => {
       const processed = processedMap.get(ticket.payment_id);
       return {
         payment_id: ticket.payment_id,
         name: ticket.name,
         email: ticket.email,
         type: ticket.ticket_type || 'Standard',
+        amount: ticket.price || 0,
         qr_generated: processed?.qr_generated || false,
         email_sent: processed?.email_sent || false
       };
