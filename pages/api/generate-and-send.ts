@@ -255,6 +255,9 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
       border-top: 1px solid #e5e5e5;
       padding-top: 16px;
       margin-top: 16px;
+      display:flex;
+      justify-content:center;
+      align-content:flex-end;
     }
     .venue-label {
       font-size: 12px;
@@ -362,7 +365,6 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
         <div class="time">${ticket.ticket_type && String(ticket.ticket_type).toLowerCase().trim().includes('day 1') ? '5:00 PM onwards' : '4:00 PM onwards'}</div>q
         
         <div class="venue">
-          <div class="venue-label">Venue</div>
           <a href="https://maps.app.goo.gl/VRVtgiKmCHmyr1LZ6" class="venue-link" target="_blank">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
