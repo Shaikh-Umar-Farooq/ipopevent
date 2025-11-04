@@ -362,7 +362,7 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
 
       <div class="event-details">
         <div class="date">${ticket.ticket_type && String(ticket.ticket_type).toLowerCase().trim().includes('day 1') ? '22 November 2025' : '23 November 2025'}</div>
-        <div class="time">${ticket.ticket_type && String(ticket.ticket_type).toLowerCase().trim().includes('day 1') ? '5:00 PM onwards' : '4:00 PM onwards'}</div>q
+        <div class="time">${ticket.ticket_type && String(ticket.ticket_type).toLowerCase().trim().includes('day 1') ? '5:00 PM onwards' : '4:00 PM onwards'}</div>
         
         <div class="venue">
           <a href="https://maps.app.goo.gl/VRVtgiKmCHmyr1LZ6" class="venue-link" target="_blank">
