@@ -1,0 +1,13 @@
+{
+  "name": "qr-code-generator",
+  "version": "1.0.0",
+  "description": "Generate encrypted QR codes for tickets",
+  "main": "generate-qr.js",
+  "scripts": {
+    "generate": "node generate-qr.js"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.3"
+  }
+}
+
