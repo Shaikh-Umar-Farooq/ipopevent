@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import DataImportModal from '@/components/DataImportModal';
 
 interface SheetRow {
   payment_id: string;
@@ -22,6 +23,7 @@ export default function QRGenerator() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [stats, setStats] = useState({ total: 0, generated: 0, pending: 0 });
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Fetch sheet data on component mount
   useEffect(() => {
@@ -137,8 +139,24 @@ export default function QRGenerator() {
             </div>
           </div>
 
+          {/* Import Data Modal */}
+          <DataImportModal
+            isOpen={showImportModal}
+            onClose={() => setShowImportModal(false)}
+            onUploadComplete={() => {
+              setSuccess('Data uploaded successfully!');
+              fetchSheetData();
+            }}
+          />
+
           {/* Action Buttons */}
-          <div className="flex gap-3 mb-6">
+          <div className="flex flex-wrap gap-3 mb-6">
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+            >
+              📋 Paste Data
+            </button>
             <button
               onClick={fetchSheetData}
               disabled={isLoading}
