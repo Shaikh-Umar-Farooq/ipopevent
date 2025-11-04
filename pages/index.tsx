@@ -37,7 +37,10 @@ export default function Home() {
 
       if (data.ticket) {
         setTicket(data.ticket);
-        setStatus(data.status);
+        // Only set status if it's a displayable status (not 'error')
+        if (data.status === 'valid' || data.status === 'used' || data.status === 'invalid') {
+          setStatus(data.status);
+        }
       } else {
         setError(data.message);
       }
