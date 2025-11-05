@@ -34,6 +34,7 @@ async function testEmail() {
     console.log('   AZURE_CLIENT_ID=your-client-id');
     console.log('   AZURE_CLIENT_SECRET=your-client-secret');
     console.log('   FROM_EMAIL=ticketing@ruskmedia.com');
+    console.log('\n📝 Get these values from: Azure Portal → App registrations → Your app');
     return;
   }
 
