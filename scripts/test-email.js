@@ -354,13 +354,22 @@ async function testEmail() {
     const qrPlaceholder = 'iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mNkYPhfz0AEYBxVSF+FAP5FDvcfRYWgAAAAAElFTkSuQmCC';
     
     const attachments = [
+      // QR code as inline (for display in email)
       {
         '@odata.type': '#microsoft.graph.fileAttachment',
-        name: 'qr-test.png',
+        name: 'ticket-qr-test.png',
         contentType: 'image/png',
         contentBytes: qrPlaceholder,
         contentId: 'qrcode',
         isInline: true
+      },
+      // QR code as regular attachment (for download)
+      {
+        '@odata.type': '#microsoft.graph.fileAttachment',
+        name: 'ticket-qr-test.png',
+        contentType: 'image/png',
+        contentBytes: qrPlaceholder,
+        isInline: false
       }
     ];
     

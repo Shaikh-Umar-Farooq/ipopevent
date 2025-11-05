@@ -73,7 +73,7 @@ export async function sendEmailViaGraph(
   // Add inline attachments with Content-ID for Gmail compatibility
   const attachments = [];
 
-  // QR Code as inline attachment
+  // QR Code as inline attachment (for display in email)
   if (qrCodeBase64 && qrFilename) {
     attachments.push({
       '@odata.type': '#microsoft.graph.fileAttachment',
@@ -83,9 +83,18 @@ export async function sendEmailViaGraph(
       contentId: 'qrcode',
       isInline: true
     });
+    
+    // QR Code as regular attachment (for download)
+    attachments.push({
+      '@odata.type': '#microsoft.graph.fileAttachment',
+      name: qrFilename,
+      contentType: 'image/png',
+      contentBytes: qrCodeBase64,
+      isInline: false
+    });
   }
 
-  // Lineup image as inline attachment
+  // Lineup image as inline attachment only
   if (lineupImageBase64 && lineupFilename) {
     attachments.push({
       '@odata.type': '#microsoft.graph.fileAttachment',
