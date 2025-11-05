@@ -7,7 +7,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getDatabase } from '@/lib/mongodb';
 import { encrypt } from '@/lib/encryption';
-import nodemailer from 'nodemailer';
+import { sendEmailViaGraph } from '@/lib/microsoft-graph';
 import QRCode from 'qrcode';
 
 interface GenerateResponse {
@@ -56,15 +56,6 @@ export default async function handler(
       });
     }
 
-    // Configure email transporter (Gmail)
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_ADDRESS,
-        pass: process.env.APP_PASSWORD 
-      }
-    });
-
     let processedCount = 0;
 
     // Process each pending ticket
@@ -91,21 +82,14 @@ export default async function handler(
         // Extract base64 string (remove data:image/png;base64, prefix)
         const qrCodeBase64 = qrCodeDataURL.split(',')[1];
 
-        // Send email
-        await transporter.sendMail({
-          from: `"iPOP Event" <${process.env.EMAIL_ADDRESS || 'smuf7080@gmail.com'}>`,
-          to: ticket.email,
-          subject: `Your ${ticket.ticket_type || 'Event'} Ticket QR Code`,
-          html: generateEmailHTML(ticket, qrCodeDataURL),
-          attachments: [
-            {
-              filename: `ticket-${ticket.payment_id}.png`,
-              content: qrCodeBase64,
-              encoding: 'base64',
-              cid: 'qrcode@ticket'
-            }
-          ]
-        });
+        // Send email via Microsoft Graph API
+        await sendEmailViaGraph(
+          ticket.email,
+          `Your ${ticket.ticket_type || 'Event'} Ticket - iPOP Live Event`,
+          generateEmailHTML(ticket, qrCodeDataURL),
+          qrCodeBase64,
+          `ticket-${ticket.payment_id}.png`
+        );
 
         // Mark as processed in database
         await processedCollection.updateOne(
@@ -362,7 +346,7 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
 
       <div class="event-details">
         <div class="date">${ticket.ticket_type && String(ticket.ticket_type).toLowerCase().trim().includes('day 1') ? '22 November 2025' : '23 November 2025'}</div>
-        <div class="time">${ticket.ticket_type && String(ticket.ticket_type).toLowerCase().trim().includes('day 1') ? '5:00 PM onwards' : '4:00 PM onwards'}</div>
+        <div class="time">${ticket.ticket_type && String(ticket.ticket_type).toLowerCase().trim().includes('day 1') ? '7:30 PM onwards' : '7:30 PM onwards'}</div>
         
         <div class="venue">
           <a href="https://maps.app.goo.gl/VRVtgiKmCHmyr1LZ6" class="venue-link" target="_blank">
