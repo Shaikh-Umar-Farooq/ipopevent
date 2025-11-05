@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import DataImportModal from '@/components/DataImportModal';
+import RawDataImportModal from '@/components/RawDataImportModal';
 
 interface SheetRow {
   payment_id: string;
@@ -25,6 +26,7 @@ export default function QRGenerator() {
   const [success, setSuccess] = useState('');
   const [stats, setStats] = useState({ total: 0, generated: 0, pending: 0 });
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showRawDataModal, setShowRawDataModal] = useState(false);
 
   // Fetch sheet data on component mount
   useEffect(() => {
@@ -94,6 +96,42 @@ export default function QRGenerator() {
     }
   };
 
+  const handleRawDataUpload = async (tickets: any[]) => {
+    try {
+      setError('');
+      setSuccess('');
+      setIsLoading(true);
+
+      // Upload tickets to database
+      const uploadResponse = await fetch('/api/upload-raw-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tickets })
+      });
+
+      const uploadResult = await uploadResponse.json();
+
+      if (uploadResult.success) {
+        setSuccess(`✅ Uploaded ${uploadResult.inserted} tickets! ${uploadResult.skipped > 0 ? `(${uploadResult.skipped} skipped)` : ''}`);
+        
+        // Refresh data
+        await fetchSheetData();
+
+        // Auto-trigger generate and send for new tickets
+        setTimeout(() => {
+          handleGenerateAndSend();
+        }, 1000);
+      } else {
+        setError(uploadResult.message || 'Failed to upload tickets');
+      }
+    } catch (err: any) {
+      console.error('Error uploading raw data:', err);
+      setError('Failed to upload data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getStatusBadge = (generated: boolean, sent: boolean) => {
     if (generated && sent) {
       return <span className="px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">✅ Sent</span>;
@@ -150,6 +188,13 @@ export default function QRGenerator() {
             }}
           />
 
+          {/* Raw Data Import Modal */}
+          <RawDataImportModal
+            isOpen={showRawDataModal}
+            onClose={() => setShowRawDataModal(false)}
+            onConfirm={handleRawDataUpload}
+          />
+
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3 mb-6">
             <button
@@ -157,6 +202,12 @@ export default function QRGenerator() {
               className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
               📋 Paste Data
+            </button>
+            <button
+              onClick={() => setShowRawDataModal(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+            >
+              📄 Paste Raw Data
             </button>
             <button
               onClick={fetchSheetData}
