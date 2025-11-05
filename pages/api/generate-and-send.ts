@@ -11,134 +11,134 @@ import { sendEmailViaGraph } from '@/lib/microsoft-graph';
 import QRCode from 'qrcode';
 
 interface GenerateResponse {
-  success: boolean;
-  processed?: number;
-  message?: string;
+    success: boolean;
+    processed?: number;
+    message?: string;
 }
 
 export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<GenerateResponse>
+    req: NextApiRequest,
+    res: NextApiResponse<GenerateResponse>
 ) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({
-      success: false,
-      message: 'Method not allowed'
-    });
-  }
-
-  try {
-    const db = await getDatabase();
-    const ticketsCollection = db.collection('tickets');
-    const processedCollection = db.collection('qr_processed');
-
-    // Get all tickets
-    const tickets = await ticketsCollection.find({}).toArray();
-
-    // Get already processed payment_ids
-    const processedRecords = await processedCollection.find({}).toArray();
-    const processedIds = new Set(
-      processedRecords
-        .filter((r: any) => r.qr_generated && r.email_sent)
-        .map((r: any) => r.payment_id)
-    );
-
-    // Filter pending entries
-    const pendingTickets = tickets.filter(
-      (ticket: any) => !processedIds.has(ticket.payment_id)
-    );
-
-    if (pendingTickets.length === 0) {
-      return res.status(200).json({
-        success: true,
-        processed: 0,
-        message: 'No pending entries to process'
-      });
+    if (req.method !== 'POST') {
+        return res.status(405).json({
+            success: false,
+            message: 'Method not allowed'
+        });
     }
 
-    let processedCount = 0;
+    try {
+        const db = await getDatabase();
+        const ticketsCollection = db.collection('tickets');
+        const processedCollection = db.collection('qr_processed');
 
-    // Process each pending ticket
-    for (const ticket of pendingTickets as any[]) {
-      try {
-        // Generate QR code payload
-        const payload = {
-          ticket_id: ticket.ticket_id,
-          email: ticket.email,
-          ts: Date.now().toString()
-        };
+        // Get all tickets
+        const tickets = await ticketsCollection.find({}).toArray();
 
-        // Encrypt payload
-        const encryptedData = encrypt(payload);
+        // Get already processed payment_ids
+        const processedRecords = await processedCollection.find({}).toArray();
+        const processedIds = new Set(
+            processedRecords
+                .filter((r: any) => r.qr_generated && r.email_sent)
+                .map((r: any) => r.payment_id)
+        );
 
-        // Generate QR code as base64 data URL
-        const qrCodeDataURL = await QRCode.toDataURL(encryptedData, {
-          errorCorrectionLevel: 'H',
-          type: 'image/png',
-          width: 400,
-          margin: 2
+        // Filter pending entries
+        const pendingTickets = tickets.filter(
+            (ticket: any) => !processedIds.has(ticket.payment_id)
+        );
+
+        if (pendingTickets.length === 0) {
+            return res.status(200).json({
+                success: true,
+                processed: 0,
+                message: 'No pending entries to process'
+            });
+        }
+
+        let processedCount = 0;
+
+        // Process each pending ticket
+        for (const ticket of pendingTickets as any[]) {
+            try {
+                // Generate QR code payload
+                const payload = {
+                    ticket_id: ticket.ticket_id,
+                    email: ticket.email,
+                    ts: Date.now().toString()
+                };
+
+                // Encrypt payload
+                const encryptedData = encrypt(payload);
+
+                // Generate QR code as base64 data URL
+                const qrCodeDataURL = await QRCode.toDataURL(encryptedData, {
+                    errorCorrectionLevel: 'H',
+                    type: 'image/png',
+                    width: 400,
+                    margin: 2
+                });
+
+                // Extract base64 string (remove data:image/png;base64, prefix)
+                const qrCodeBase64 = qrCodeDataURL.split(',')[1];
+
+                // Send email via Microsoft Graph API
+                await sendEmailViaGraph(
+                    ticket.email,
+                    ` Booking Confirmation for i-Popstar Live: Your ticket for ${ticket.ticket_type || 'Event'} `,
+                    generateEmailHTML(ticket, qrCodeDataURL),
+                    qrCodeBase64,
+                    `ticket-${ticket.payment_id}.png`
+                );
+
+                // Mark as processed in database
+                await processedCollection.updateOne(
+                    { payment_id: ticket.payment_id },
+                    {
+                        $set: {
+                            payment_id: ticket.payment_id,
+                            ticket_id: ticket.ticket_id,
+                            email: ticket.email,
+                            qr_generated: true,
+                            email_sent: true,
+                            sent_at: new Date()
+                        }
+                    },
+                    { upsert: true }
+                );
+
+                processedCount++;
+                console.log(`✅ Sent QR code to ${ticket.email} (${ticket.payment_id})`);
+
+                // Small delay to avoid rate limits
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+            } catch (err: any) {
+                console.error(`❌ Failed to process ${ticket.payment_id}:`, err.message);
+                // Continue with next ticket even if one fails
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            processed: processedCount,
+            message: `Successfully processed ${processedCount} out of ${pendingTickets.length} entries`
         });
 
-        // Extract base64 string (remove data:image/png;base64, prefix)
-        const qrCodeBase64 = qrCodeDataURL.split(',')[1];
-
-        // Send email via Microsoft Graph API
-        await sendEmailViaGraph(
-          ticket.email,
-          `Your ${ticket.ticket_type || 'Event'} Ticket - iPOP Live Event`,
-          generateEmailHTML(ticket, qrCodeDataURL),
-          qrCodeBase64,
-          `ticket-${ticket.payment_id}.png`
-        );
-
-        // Mark as processed in database
-        await processedCollection.updateOne(
-          { payment_id: ticket.payment_id },
-          {
-            $set: {
-              payment_id: ticket.payment_id,
-              ticket_id: ticket.ticket_id,
-              email: ticket.email,
-              qr_generated: true,
-              email_sent: true,
-              sent_at: new Date()
-            }
-          },
-          { upsert: true }
-        );
-
-        processedCount++;
-        console.log(`✅ Sent QR code to ${ticket.email} (${ticket.payment_id})`);
-
-        // Small delay to avoid rate limits
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-      } catch (err: any) {
-        console.error(`❌ Failed to process ${ticket.payment_id}:`, err.message);
-        // Continue with next ticket even if one fails
-      }
+    } catch (error: any) {
+        console.error('Error generating and sending:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to generate and send QR codes'
+        });
     }
-
-    return res.status(200).json({
-      success: true,
-      processed: processedCount,
-      message: `Successfully processed ${processedCount} out of ${pendingTickets.length} entries`
-    });
-
-  } catch (error: any) {
-    console.error('Error generating and sending:', error);
-    return res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to generate and send QR codes'
-    });
-  }
 }
 
 /**
  * Generate HTML email template
  */
 function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
-  return `
+    return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -367,10 +367,11 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
       <div class="warning">
         <strong>⚠️ Important</strong>
         <ul>
-          <li>Don't share this QR code with anyone</li>
-          <li>One-time use only</li>
-          <li>Arrive 30 minutes before event time</li>
+            <li>please  <strong> do not share this QR code with anyone</strong></li>
+            <li>it is valid for <strong> one-time use only</strong></li>
+            <li>kindly arrive <strong> 30 minutes before the event </strong> to ensure smooth entry and verification</li>
         </ul>
+
       </div>
     </div>
     
