@@ -33,14 +33,17 @@ export function getGraphClient(): Client {
 }
 
 /**
- * Send email via Microsoft Graph API
+ * Send email via Microsoft Graph API with inline images (CID attachments)
+ * This format works better with Gmail
  */
 export async function sendEmailViaGraph(
   to: string,
   subject: string,
   htmlContent: string,
   qrCodeBase64?: string,
-  attachmentFilename?: string
+  qrFilename?: string,
+  lineupImageBase64?: string,
+  lineupFilename?: string
 ) {
   const client = getGraphClient();
   const fromEmail = process.env.FROM_EMAIL || 'ticketing@ruskmedia.com';
@@ -67,16 +70,35 @@ export async function sendEmailViaGraph(
     }
   };
 
-  // Add attachment if provided
-  if (qrCodeBase64 && attachmentFilename) {
-    message.message.attachments = [
-      {
-        '@odata.type': '#microsoft.graph.fileAttachment',
-        name: attachmentFilename,
-        contentType: 'image/png',
-        contentBytes: qrCodeBase64
-      }
-    ];
+  // Add inline attachments with Content-ID for Gmail compatibility
+  const attachments = [];
+
+  // QR Code as inline attachment
+  if (qrCodeBase64 && qrFilename) {
+    attachments.push({
+      '@odata.type': '#microsoft.graph.fileAttachment',
+      name: qrFilename,
+      contentType: 'image/png',
+      contentBytes: qrCodeBase64,
+      contentId: 'qrcode',
+      isInline: true
+    });
+  }
+
+  // Lineup image as inline attachment
+  if (lineupImageBase64 && lineupFilename) {
+    attachments.push({
+      '@odata.type': '#microsoft.graph.fileAttachment',
+      name: lineupFilename,
+      contentType: 'image/jpeg',
+      contentBytes: lineupImageBase64,
+      contentId: 'lineup',
+      isInline: true
+    });
+  }
+
+  if (attachments.length > 0) {
+    message.message.attachments = attachments;
   }
 
   // Send email using the sendMail endpoint

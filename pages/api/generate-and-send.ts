@@ -9,6 +9,8 @@ import { getDatabase } from '@/lib/mongodb';
 import { encrypt } from '@/lib/encryption';
 import { sendEmailViaGraph } from '@/lib/microsoft-graph';
 import QRCode from 'qrcode';
+import fs from 'fs';
+import path from 'path';
 
 interface GenerateResponse {
     success: boolean;
@@ -82,13 +84,19 @@ export default async function handler(
                 // Extract base64 string (remove data:image/png;base64, prefix)
                 const qrCodeBase64 = qrCodeDataURL.split(',')[1];
 
-                // Send email via Microsoft Graph API
+                // Get lineup image
+                const lineupImageDataURL = getLineupImageBase64();
+                const lineupImageBase64 = lineupImageDataURL ? lineupImageDataURL.split(',')[1] : undefined;
+
+                // Send email via Microsoft Graph API with both QR and lineup as CID attachments
                 await sendEmailViaGraph(
                     ticket.email,
                     ` Booking Confirmation for i-Popstar Live: Your ticket for ${ticket.ticket_type || 'Event'} `,
-                    generateEmailHTML(ticket, qrCodeDataURL),
+                    generateEmailHTML(ticket),
                     qrCodeBase64,
-                    `ticket-${ticket.payment_id}.png`
+                    `ticket-${ticket.payment_id}.png`,
+                    lineupImageBase64,
+                    'lineup.jpg'
                 );
 
                 // Mark as processed in database
@@ -135,9 +143,48 @@ export default async function handler(
 }
 
 /**
- * Generate HTML email template
+ * Get lineup image as base64 data URL
  */
-function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
+function getLineupImageBase64(): string {
+  try {
+    const imagePath = path.join(process.cwd(), 'public', 'lineup-optimized.jpg');
+    
+    if (!fs.existsSync(imagePath)) {
+      console.error('❌ Lineup image not found at:', imagePath);
+      return '';
+    }
+    
+    const imageBuffer = fs.readFileSync(imagePath);
+    const fileSizeKB = (imageBuffer.length / 1024).toFixed(2);
+    console.log(`✅ Lineup image loaded: ${fileSizeKB} KB`);
+    
+    const base64Image = imageBuffer.toString('base64');
+    
+    if (imageBuffer.length > 500000) { // > 500KB
+      console.warn('⚠️ Lineup image is large (>500KB), may affect email delivery');
+    }
+    
+    return `data:image/jpeg;base64,${base64Image}`;
+  } catch (error) {
+    console.error('❌ Error reading lineup image:', error);
+    return ''; // Return empty if error
+  }
+}
+
+/**
+ * Get just the base64 string without data URL prefix
+ */
+function getLineupImageBase64Only(): string {
+  const dataURL = getLineupImageBase64();
+  return dataURL ? dataURL.split(',')[1] : '';
+}
+
+/**
+ * Generate HTML email template
+ * Uses CID (Content-ID) references for images instead of base64 data URLs
+ * This works better with Gmail
+ */
+function generateEmailHTML(ticket: any): string {
     return `
 <!DOCTYPE html>
 <html>
@@ -162,7 +209,7 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .header { 
-      background: #000; 
+      background: #0075FF; 
       color: white; 
       padding: 24px; 
       text-align: center; 
@@ -172,51 +219,35 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
       font-size: 24px;
       font-weight: 600;
     }
-    .content { 
-      padding: 32px 24px; 
-    }
-    .thank-you {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-    .thank-you h2 {
-      margin: 0 0 8px 0;
-      font-size: 20px;
-      color: #000;
-    }
-    .thank-you p {
-      margin: 0;
-      color: #666;
-      font-size: 15px;
-    }
-    .ticket-info { 
-      margin: 24px 0;
-      padding: 20px 0;
-      border-top: 1px solid #e5e5e5;
-      border-bottom: 1px solid #e5e5e5;
-    }
-    .info-row { 
-      display: flex;
-      justify-content: space-between;
-      margin: 12px 0;
-      font-size: 15px;
-    }
-    .label { 
-      color: #666;
-    }
-    .value {
-      font-weight: 600;
-      color: #000;
-      text-align: right;
-    }
-    .ticket-type {
-      background: #000;
-      color: white;
-      padding: 6px 16px;
-      border-radius: 6px;
-      font-size: 14px;
+
+    /* --- NEW RIBBON STYLE --- */
+    .ticket-type-ribbon {
       display: inline-block;
+      margin: 24px auto 20px auto; /* Comfortable Spacing */
+      padding: 10px 20px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #0075FF;
+      border: 2px solid #0075FF;
+      background: white;
+      border-radius: 6px;
+      position: relative;
     }
+
+    .content { padding: 20px 24px; }
+
+    .info-table {
+      width: 100%;
+      margin: 10px 0;
+      border-collapse: collapse;
+    }
+    .info-table td {
+      padding: 8px 0;
+      font-size: 15px;
+    }
+    .label { color: #666; }
+    .value { font-weight: 600; color: #000; text-align: right; }
+
     .event-details {
       background: #f9f9f9;
       padding: 16px;
@@ -228,6 +259,7 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
       font-weight: 600;
       margin-bottom: 4px;
       text-align: center;
+      color: #000;
     }
     .event-details .time {
       color: #666;
@@ -235,41 +267,31 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
       text-align: center;
       margin-bottom: 16px;
     }
+
     .venue {
       border-top: 1px solid #e5e5e5;
       padding-top: 16px;
       margin-top: 16px;
-      display:flex;
-      justify-content:center;
-      align-content:flex-end;
-    }
-    .venue-label {
-      font-size: 12px;
-      color: #666;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
+      text-align: center;
     }
     .venue-link {
       display: inline-flex;
       align-items: center;
-      color: #000;
+      color: #0075FF;
       text-decoration: none;
       font-size: 14px;
       font-weight: 500;
       padding: 8px 12px;
       background: white;
-      border: 1px solid #e5e5e5;
+      border: 1px solid #0075FF;
       border-radius: 6px;
       transition: all 0.2s;
     }
     .venue-link:hover {
-      background: #f5f5f5;
-      border-color: #000;
+      background: #E8F2FF;
     }
-    .venue-link svg {
-      margin-right: 6px;
-    }
+    .venue-link svg { margin-right: 6px; }
+
     .qr-container { 
       text-align: center; 
       margin: 32px 0; 
@@ -280,27 +302,26 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
       border: 8px solid #f5f5f5;
       border-radius: 8px;
     }
-    .warning { 
-      background: #fff8e1; 
-      border-left: 3px solid #ffa726;
+
+    /* --- NEW BLUE SOFT INFO CARD --- */
+    .info-box { 
+      background: #EAF3FF; 
+      border-left: 4px solid #0075FF;
       padding: 16px; 
-      border-radius: 4px; 
+      border-radius: 8px; 
       margin: 24px 0;
       font-size: 14px;
+      color: #003B80;
     }
-    .warning strong {
+    .info-box strong {
       display: block;
-      margin-bottom: 8px;
-      color: #f57c00;
+      margin-bottom: 6px;
+      color: #0056C7;
+      font-weight: 600;
     }
-    .warning ul {
-      margin: 8px 0 0 0;
-      padding-left: 20px;
-    }
-    .warning li {
-      margin: 4px 0;
-      color: #666;
-    }
+    .info-box ul { margin: 6px 0 0 0; padding-left: 18px; }
+    .info-box li { margin: 4px 0; }
+
     .footer { 
       text-align: center; 
       padding: 20px;
@@ -312,42 +333,40 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
 </head>
 <body>
   <div class="container">
+
     <div class="header">
       <h1>I-Popstar Live - Ticket</h1>
     </div>
     
     <div class="content">
-      <div class="thank-you">
-        <h2>Thank You for Your Purchase! 🎉</h2>
-        <p>We're excited to see you at the event</p>
+
+      <!-- NEW RIBBON -->
+      <div style="text-align:center;">
+        <div class="ticket-type-ribbon">
+          ${ticket.ticket_type || 'Standard'}
+        </div>
       </div>
 
-      <div class="ticket-info">
-        <div class="info-row">
-          <span class="label">Ticket Type</span>
-          <span class="value"><span class="ticket-type">${ticket.ticket_type || 'Standard'}</span></span>
-        </div>
-        
-        <div class="info-row">
-          <span class="label">Name</span>
-          <span class="value">${ticket.name}</span>
-        </div>
-        
-        <div class="info-row">
-          <span class="label">Email</span>
-          <span class="value">${ticket.email}</span>
-        </div>
-        
-        <div class="info-row">
-          <span class="label">Amount Paid</span>
-          <span class="value">₹${ticket.price || '0'}</span>
-        </div>
-      </div>
+      <table class="info-table" role="presentation">
+        <tr>
+          <td class="label">Name</td>
+          <td class="value">${ticket.name}</td>
+        </tr>
+        <tr>
+          <td class="label">Email</td>
+          <td class="value">${ticket.email}</td>
+        </tr>
+        <tr>
+          <td class="label">Amount Paid</td>
+          <td class="value">₹${ticket.price || '0'}</td>
+        </tr>
+      </table>
 
       <div class="event-details">
-        <div class="date">${ticket.ticket_type && String(ticket.ticket_type).toLowerCase().trim().includes('day 1') ? '22 November 2025' : '23 November 2025'}</div>
-        <div class="time">${ticket.ticket_type && String(ticket.ticket_type).toLowerCase().trim().includes('day 1') ? '7:30 PM onwards' : '7:30 PM onwards'}</div>
-        
+        <div class="date">
+          ${ticket.ticket_type && String(ticket.ticket_type).toLowerCase().trim().includes('day 1') ? '22 November 2025' : '23 November 2025'}
+        </div>
+        <div class="time">7:30 PM onwards</div>
         <div class="venue">
           <a href="https://maps.app.goo.gl/VRVtgiKmCHmyr1LZ6" class="venue-link" target="_blank">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -360,19 +379,23 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
       </div>
       
       <div class="qr-container">
-        <img src="${qrCodeDataURL}" alt="Ticket QR Code" class="qr-code" />
+        <img src="cid:qrcode" alt="Ticket QR Code" class="qr-code" />
         <p style="margin-top: 12px; font-size: 14px; color: #666;">Scan at venue entrance</p>
       </div>
       
-      <div class="warning">
-        <strong>⚠️ Important</strong>
+      <div class="info-box">
+        <strong>Important</strong>
         <ul>
-            <li>please  <strong> do not share this QR code with anyone</strong></li>
-            <li>it is valid for <strong> one-time use only</strong></li>
-            <li>kindly arrive <strong> 30 minutes before the event </strong> to ensure smooth entry and verification</li>
+          <li>Do not share this QR code with anyone</li>
+          <li>Valid for one-time use only</li>
+          <li>Arrive 30 minutes before the event for smooth entry</li>
         </ul>
-
       </div>
+
+    </div>
+    
+    <div style="text-align: center; padding: 20px 24px 10px 24px;">
+      <img src="cid:lineup" alt="Event Lineup" style="max-width: 100%; height: auto; border-radius: 8px;" />
     </div>
     
     <div class="footer">
@@ -381,6 +404,7 @@ function generateEmailHTML(ticket: any, qrCodeDataURL: string): string {
   </div>
 </body>
 </html>
+
   `;
 }
 
