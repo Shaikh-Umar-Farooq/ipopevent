@@ -38,7 +38,8 @@ export default function PromoEmailModal({ isOpen, onClose }: PromoEmailModalProp
     }
 
     // Add unique emails
-    const uniqueEmails = [...new Set([...emails, ...validEmails])];
+    const combinedEmails = emails.concat(validEmails);
+    const uniqueEmails = Array.from(new Set(combinedEmails));
     setEmails(uniqueEmails);
     setEmailInput('');
     setSuccess(`Added ${validEmails.length} email(s)`);
