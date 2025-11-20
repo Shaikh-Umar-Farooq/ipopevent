@@ -7,6 +7,8 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import DataImportModal from '@/components/DataImportModal';
 import RawDataImportModal from '@/components/RawDataImportModal';
+import SpecialTicketModal from '@/components/SpecialTicketModal';
+import PromoEmailModal from '@/components/PromoEmailModal';
 
 interface SheetRow {
   payment_id: string;
@@ -33,6 +35,8 @@ export default function QRGenerator() {
   const [stats, setStats] = useState({ total: 0, generated: 0, pending: 0 });
   const [showImportModal, setShowImportModal] = useState(false);
   const [showRawDataModal, setShowRawDataModal] = useState(false);
+  const [showSpecialTicketModal, setShowSpecialTicketModal] = useState(false);
+  const [showPromoEmailModal, setShowPromoEmailModal] = useState(false);
 
   // Check authentication on mount
   useEffect(() => {
@@ -144,6 +148,66 @@ export default function QRGenerator() {
     } catch (err: any) {
       console.error('Error uploading raw data:', err);
       setError('Failed to upload data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSpecialTicketGenerate = async (count: number, ticketType: string) => {
+    try {
+      setError('');
+      setSuccess('');
+
+      const response = await fetch('/api/generate-special-tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count, ticketType })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSuccess(`✅ ${result.message}! QR codes saved to: ${result.folderPath}`);
+        
+        // Refresh data to show the new special tickets
+        await fetchSheetData();
+      } else {
+        setError(result.message || 'Failed to generate special tickets');
+      }
+    } catch (err: any) {
+      console.error('Error generating special tickets:', err);
+      setError('Failed to generate special tickets. Please try again.');
+    }
+  };
+
+  const handleFixSpecialTickets = async () => {
+    if (!confirm('This will mark all existing special tickets as "email_sent: true". Continue?')) {
+      return;
+    }
+
+    try {
+      setError('');
+      setSuccess('');
+      setIsLoading(true);
+
+      const response = await fetch('/api/fix-special-tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSuccess(`✅ ${result.message}! Updated: ${result.ticketsUpdated} tickets, ${result.processedUpdated} processed records.`);
+        
+        // Refresh data to show updated stats
+        await fetchSheetData();
+      } else {
+        setError(result.message || 'Failed to fix special tickets');
+      }
+    } catch (err: any) {
+      console.error('Error fixing special tickets:', err);
+      setError('Failed to fix special tickets. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -338,6 +402,19 @@ export default function QRGenerator() {
             onConfirm={handleRawDataUpload}
           />
 
+          {/* Special Ticket Modal */}
+          <SpecialTicketModal
+            isOpen={showSpecialTicketModal}
+            onClose={() => setShowSpecialTicketModal(false)}
+            onGenerate={handleSpecialTicketGenerate}
+          />
+
+          {/* Promotional Email Modal */}
+          <PromoEmailModal
+            isOpen={showPromoEmailModal}
+            onClose={() => setShowPromoEmailModal(false)}
+          />
+
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3 mb-6">
             <button
@@ -365,6 +442,26 @@ export default function QRGenerator() {
               className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
               {isGenerating ? '⏳ Processing...' : `✉️ Generate & Send (${stats.pending})`}
+            </button>
+            <button
+              onClick={() => setShowSpecialTicketModal(true)}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+            >
+              🎟️ Special Tickets
+            </button>
+            <button
+              onClick={handleFixSpecialTickets}
+              disabled={isLoading}
+              className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+              title="Mark all existing special tickets as sent"
+            >
+              🔧 Fix Special Tickets
+            </button>
+            <button
+              onClick={() => setShowPromoEmailModal(true)}
+              className="bg-pink-600 hover:bg-pink-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+            >
+              📧 Send Promo Email
             </button>
           </div>
 

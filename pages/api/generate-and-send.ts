@@ -45,9 +45,11 @@ export default async function handler(
                 .map((r: any) => r.payment_id)
         );
 
-        // Filter pending entries
+        // Filter pending entries (exclude special tickets)
         const pendingTickets = tickets.filter(
-            (ticket: any) => !processedIds.has(ticket.payment_id)
+            (ticket: any) => !processedIds.has(ticket.payment_id) && 
+                             !ticket.special_ticket && 
+                             ticket.email !== '***'
         );
 
         if (pendingTickets.length === 0) {

@@ -50,13 +50,13 @@ async function testGraph() {
 
     // Step 2: Create Graph client
     console.log('🔌 Step 2: Initializing Microsoft Graph client...');
-    const client = Client.initWithMiddleware({
-      authProvider: {
-        getAccessToken: async () => {
+const client = Client.initWithMiddleware({
+  authProvider: {
+    getAccessToken: async () => {
           return tokenResponse.token;
-        }
-      }
-    });
+    }
+  }
+});
     console.log('✅ Graph client initialized!\n');
 
     // Step 3: Test User.Read permission - Fetch user data
